@@ -16,7 +16,7 @@
 # 2024-08-23
 
 import csv
-from typing import Dict, List, Optional
+from typing import Any, Dict, Iterable, List, Optional
 
 input_combinations_csv = 'LogHoloEnRpgPersonalityQuizCombinations.csv'
 output_subcombinations_csv = 'holoEN_RPG_personality_quiz_data_subcombinations.csv'
@@ -46,14 +46,14 @@ def get_subcombinations_to_guaranteed_result() -> Dict[str, Optional[str]]:
     return { choice_subcombination : get_guaranteed_result(choice_subcombination) for choice_subcombination in get_all_choice_subcombinations() }
 
 
-def get_all_choice_subcombinations() -> List[str]:
-    """Returns a list of choice subcombinations filtered from all choice combinations."""
-    return [choice_combination for choice_combination in get_all_choice_combinations() if '0' in choice_combination]
+def get_all_choice_subcombinations() -> Iterable[str]:
+    """Returns a generator of choice subcombinations filtered from all choice combinations."""
+    return (choice_combination for choice_combination in get_all_choice_combinations() if '0' in choice_combination)
 
 
-def get_all_choice_combinations() -> List[str]:
-    """Returns a list of combinations of 5 digits ranging from 0 to 4."""
-    return [change_base(n, 5).zfill(5) for n in range(5**5)]
+def get_all_choice_combinations() -> Iterable[str]:
+    """Returns a generator of combinations of 5 digits ranging from 0 to 4."""
+    return (change_base(n, 5).zfill(5) for n in range(5**5))
 
 
 def change_base(n: int, base: int) -> str:
@@ -76,7 +76,8 @@ def get_guaranteed_result(choices: str) -> Optional[str]:
     """
     choice_branches = generate_choice_branches(choices)
     results = get_results(choice_branches)
-    return results[0] if all_same(results) else None
+    first_result = next(results)
+    return first_result if all_same(results, first_result) else None
 
 
 def generate_choice_branches(choices: str) -> List[str]:
@@ -108,9 +109,9 @@ def double_list(items: list) -> list:
     return output_list
 
 
-def get_results(choices_list: List[str]) -> List[str]:
-    """Returns a list of results corresponding with the given list of quiz choices."""
-    return [get_result(choices) for choices in choices_list]
+def get_results(choices_iterable: Iterable[str]) -> Iterable[str]:
+    """Returns a generator of results corresponding with the given iterable of quiz choices."""
+    return (get_result(choices) for choices in choices_iterable)
 
 
 def get_result(choices: str) -> str:
@@ -118,9 +119,15 @@ def get_result(choices: str) -> str:
     return quiz_choices_to_results[choices]
 
 
-def all_same(items: list) -> bool:
-    """Returns whether all items in the given list are equal."""
-    return all(item == items[0] for item in items)
+def all_same(iterable: Iterable, first: Any=None) -> bool:
+    """Returns whether all items in the given iterable are equal."""
+    itr = iter(iterable)
+    try:
+        if first is None:
+            first = next(itr)
+    except StopIteration:
+        return True
+    return all(item == first for item in itr)
 
 
 if __name__ == '__main__':
